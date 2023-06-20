@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"github.com/veandco/go-sdl2/sdl"
 	"github.com/veandco/go-sdl2/ttf"
@@ -40,48 +41,20 @@ func run() error {
 		return fmt.Errorf("could not draw the title: %v", err)
 	}
 
-	time.Sleep(5 * time.Second)
+	time.Sleep(1 * time.Second)
 
-	/*if err := drawBackground(r); err != nil {
-		return fmt.Errorf("could not draw background: %v", err)
-	}
-
-	time.Sleep(5 * time.Second)*/
-
-	running := true
-	for running {
-		for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {
-			switch event.(type) {
-			case *sdl.QuitEvent:
-				println("Quit")
-				running = false
-				break
-			}
-		}
-		sdl.Delay(16)
-	}
-
-	return nil
-}
-
-/*func drawBackground(r *sdl.Renderer) error {
-	r.Clear()
-
-	t, err := img.LoadTexture(r, "res/imgs/background.png")
+	s, err := newScene(r)
 	if err != nil {
-		return fmt.Errorf("could not load background: %v", err)
+		return fmt.Errorf("could not draw scene: %v", err)
 	}
+	defer s.destroy()
 
-	defer t.Destroy()
+	ctx, cancel := context.WithCancel(context.Background())
 
-	if err := r.Copy(t, nil, nil); err != nil {
-		return fmt.Errorf("could not copy background: %v", err)
-	}
+	time.AfterFunc(5*time.Second, cancel)
 
-	r.Present()
-
-	return nil
-}*/
+	return <-s.run(ctx, r)
+}
 
 func drawTitle(r *sdl.Renderer) error {
 	r.Clear()
