@@ -1,11 +1,11 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"github.com/veandco/go-sdl2/sdl"
 	"github.com/veandco/go-sdl2/ttf"
 	"os"
+	"runtime"
 	"time"
 )
 
@@ -30,7 +30,7 @@ func run() error {
 
 	defer ttf.Quit()
 
-	w, r, err := sdl.CreateWindowAndRenderer(800, 200, sdl.WINDOW_SHOWN)
+	w, r, err := sdl.CreateWindowAndRenderer(800, 600, sdl.WINDOW_SHOWN)
 	if nil != err {
 		return fmt.Errorf("could not create window: %v", err)
 	}
@@ -49,11 +49,19 @@ func run() error {
 	}
 	defer s.destroy()
 
-	ctx, cancel := context.WithCancel(context.Background())
+	events := make(chan sdl.Event)
+	errc := s.run(events, r)
 
-	time.AfterFunc(5*time.Second, cancel)
+	runtime.LockOSThread()
 
-	return <-s.run(ctx, r)
+	for {
+		select {
+		case events <- sdl.WaitEvent():
+		case err := <-errc:
+			return err
+		}
+
+	}
 }
 
 func drawTitle(r *sdl.Renderer) error {
